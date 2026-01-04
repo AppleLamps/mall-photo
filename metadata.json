@@ -1,0 +1,7 @@
+{
+  "name": "Mall Photo",
+  "description": "Strike a pose for a Gemini-powered 80s photo, then animate it instantly with Veo.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
