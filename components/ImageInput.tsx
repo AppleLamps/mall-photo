@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import StyleSelector from './StyleSelector';
 import { STYLES } from '../constants/styles';
+import { compressImage, compressBase64Image } from '../services/imageUtils';
 
 interface ImageInputProps {
   onImageReady: (imageData: { data: string; mimeType: string }, styleId: string) => void;
@@ -93,21 +94,29 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, initialStyleId })
     processFile(file);
   };
 
-  const processFile = (file: File | undefined) => {
+  const processFile = async (file: File | undefined) => {
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result) {
+      try {
+        // Compress image before sending to API (max 1920px, JPEG quality 0.85)
+        const compressed = await compressImage(file);
+        onImageReady({ data: compressed.data, mimeType: compressed.mimeType }, selectedStyleId);
+      } catch (error) {
+        console.error('Image compression failed:', error);
+        // Fallback to original uncompressed image
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (result) {
             const base64 = result.split(',')[1];
             onImageReady({ data: base64, mimeType: file.type }, selectedStyleId);
-        }
-      };
-      reader.readAsDataURL(file);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (videoRef.current && stream) {
       if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) {
         setCameraError("Video stream not ready.");
@@ -122,11 +131,19 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, initialStyleId })
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        
+
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const base64 = dataUrl.split(',')[1];
-        
-        onImageReady({ data: base64, mimeType: 'image/jpeg' }, selectedStyleId);
+
+        try {
+          // Compress camera capture (max 1920px, JPEG quality 0.85)
+          const compressed = await compressBase64Image(base64, 'image/jpeg');
+          onImageReady({ data: compressed.data, mimeType: compressed.mimeType }, selectedStyleId);
+        } catch (error) {
+          console.error('Image compression failed:', error);
+          // Fallback to original uncompressed capture
+          onImageReady({ data: base64, mimeType: 'image/jpeg' }, selectedStyleId);
+        }
       }
     }
   };
@@ -151,7 +168,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, initialStyleId })
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
     processFile(file);
-  }, []);
+  }, [selectedStyleId, onImageReady]);
 
   if (mode === 'select') {
       return (
@@ -195,7 +212,15 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, initialStyleId })
                    <p className="relative z-10 text-gray-400 text-sm max-w-[200px]">Drag & drop an image here or click to browse.</p>
                 </div>
              </div>
-             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+             <input
+               type="file"
+               ref={fileInputRef}
+               onChange={handleFileChange}
+               accept="image/*"
+               className="hidden"
+               aria-label="Upload photo"
+               title="Upload photo"
+             />
           </div>
       )
   }

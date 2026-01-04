@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import { startImageChatSession, continueImageChatSession, generateVideoFromImage } from './services/geminiService';
 import Header from './components/Header';
@@ -29,6 +29,15 @@ const App: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Cleanup video blob URL when component unmounts or videoUrl changes
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [videoUrl]);
 
   const handleImageReady = useCallback(async ({ data, mimeType }: { data: string; mimeType: string }, styleId: string) => {
     setAppState(AppState.PROCESSING);
@@ -97,6 +106,10 @@ const App: React.FC = () => {
     setVideoError(null);
     try {
         const generatedVideoUrl = await generateVideoFromImage(outputImageUrl, prompt, keyForGeneration);
+        // Cleanup previous video blob URL before setting new one
+        if (videoUrl) {
+          URL.revokeObjectURL(videoUrl);
+        }
         setVideoUrl(generatedVideoUrl);
     } catch (error) {
         console.error(error);
@@ -105,10 +118,15 @@ const App: React.FC = () => {
     } finally {
         setIsGeneratingVideo(false);
     }
-  }, [outputImageUrl]);
+  }, [outputImageUrl, videoUrl]);
 
 
   const handleReset = useCallback(() => {
+    // Cleanup video blob URL to prevent memory leak
+    if (videoUrl) {
+      URL.revokeObjectURL(videoUrl);
+    }
+
     setAppState(AppState.IDLE);
     setSourceImage(null);
     setOutputImageUrl(null);
@@ -120,7 +138,7 @@ const App: React.FC = () => {
     setVideoUrl(null);
     setVideoError(null);
     // Note: We deliberately don't reset selectedStyleId so user can keep their preference
-  }, []);
+  }, [videoUrl]);
 
   const renderContent = () => {
     switch (appState) {
