@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- */
+*/
 
 import React, { useState, useEffect } from 'react';
 import { getStyleById } from '../constants/styles';
@@ -36,16 +36,10 @@ const LoadingView: React.FC<LoadingViewProps> = ({ styleId }) => {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-white">
-      <div className="relative mb-8">
-          <div className="w-16 h-16 border-4 border-yellow-400/30 border-t-yellow-500 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 bg-yellow-400/20 rounded-full animate-pulse"></div>
-          </div>
-      </div>
-      <div className="text-xl md:text-2xl text-amber-600 font-display tracking-widest font-bold">
+    <div className="w-full text-center p-8 border-2 border-yellow-300 bg-black bg-opacity-50 animate-fade-in">
+      <div className="text-2xl text-yellow-300 font-display tracking-wider">
         {loadingMessages[messageIndex % loadingMessages.length]}
-        <span className="animate-pulse ml-1">_</span>
+        <span className="animate-ping">_</span>
       </div>
     </div>
   );

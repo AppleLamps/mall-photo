@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import Polaroid from './Polaroid';
 import ChatInput from './ChatInput';
+import StyleSwitchModal from './StyleSwitchModal';
 
 interface ResultViewProps {
   imageUrl: string;
@@ -22,6 +23,7 @@ interface ResultViewProps {
 
 const ResultView: React.FC<ResultViewProps> = ({ imageUrl, videoUrl, onReset, onEdit, onSwitchStyle, onBringToLife, isRegenerating, editError, videoError, styleId }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
   
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -40,8 +42,8 @@ const ResultView: React.FC<ResultViewProps> = ({ imageUrl, videoUrl, onReset, on
   const hasVideo = !!videoUrl;
 
   return (
-    <div className="w-full flex flex-col items-center animate-fade-in max-w-4xl mx-auto p-4">
-      <div className="mb-6 w-full flex justify-center">
+    <div className="w-full flex flex-col items-center animate-fade-in max-w-4xl mx-auto">
+      <div className="mb-10">
         <Polaroid 
           imageUrl={imageUrl} 
           videoUrl={videoUrl} 
@@ -52,33 +54,41 @@ const ResultView: React.FC<ResultViewProps> = ({ imageUrl, videoUrl, onReset, on
       </div>
 
       {!hasVideo && (
-        <div className="w-full max-w-xl mb-6">
+        <div className="w-full max-w-xl mb-8">
           <ChatInput onPromptSubmit={onEdit} disabled={isRegenerating} />
           {editError && (
-            <p className="text-red-600 text-sm text-center mt-3 bg-red-100 py-2 rounded-lg border border-red-200">{editError}</p>
+            <p className="text-red-400 text-sm text-center mt-3 bg-red-900/20 py-2 rounded-lg">{editError}</p>
           )}
         </div>
       )}
 
       {videoError && (
-          <div className="w-full max-w-xl bg-red-100 border border-red-300 p-4 rounded-lg mb-8 text-center">
-              <p className="text-red-600">{videoError}</p>
+          <div className="w-full max-w-xl bg-red-900/20 border border-red-500/50 p-4 rounded-lg mb-8 text-center">
+              <p className="text-red-300">{videoError}</p>
           </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 w-full max-w-xl pb-8">
+      <div className="grid grid-cols-2 gap-4 w-full max-w-xl">
         <button
           onClick={onReset}
           disabled={isRegenerating}
-          className="py-3 px-4 rounded-lg font-bold border-2 border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400 hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
+          className="py-3 px-4 rounded-lg font-bold border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
         >
           Start Over
         </button>
 
+         <button
+          onClick={() => setIsStyleModalOpen(true)}
+          disabled={isRegenerating || hasVideo}
+          className="py-3 px-4 rounded-lg font-bold border border-cyan-500/50 text-cyan-400 hover:text-white hover:bg-cyan-900/30 hover:border-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
+        >
+          Change Era
+        </button>
+        
         <button
           onClick={handleDownload}
           disabled={isRegenerating}
-          className="col-span-1 btn-orange text-white py-3 px-4 rounded-lg font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
+          className="col-span-1 btn-cyan text-white py-3 px-4 rounded-lg font-bold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
         >
           {hasVideo ? 'Save Video' : 'Save Photo'}
         </button>
@@ -87,11 +97,13 @@ const ResultView: React.FC<ResultViewProps> = ({ imageUrl, videoUrl, onReset, on
             <button
                 onClick={onBringToLife}
                 disabled={isRegenerating}
-                className="col-span-2 btn-primary text-gray-800 py-3 px-4 rounded-lg font-bold shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
+                className="col-span-1 btn-primary text-white py-3 px-4 rounded-lg font-bold shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 transition-all transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm whitespace-nowrap"
             >
                 Animate
             </button>
-        ) : null}
+        ) : (
+            <div className="hidden"></div> /* Spacer if video exists */
+        )}
       </div>
 
       {isPreviewOpen && (
@@ -129,6 +141,14 @@ const ResultView: React.FC<ResultViewProps> = ({ imageUrl, videoUrl, onReset, on
             )}
           </div>
         </div>
+      )}
+
+      {isStyleModalOpen && (
+        <StyleSwitchModal 
+            currentStyleId={styleId || '80s'} 
+            onSelect={onSwitchStyle} 
+            onClose={() => setIsStyleModalOpen(false)} 
+        />
       )}
     </div>
   );

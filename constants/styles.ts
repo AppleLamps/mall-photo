@@ -481,11 +481,6 @@ export const STYLES: StyleOption[] = [
   }
 ];
 
-// Pre-compute the lookup map once for O(1) access instead of O(n) array search
-const STYLES_MAP = new Map<string, StyleOption>(
-  STYLES.map(style => [style.id, style])
-);
-
 export const getStyleById = (id: string): StyleOption => {
-  return STYLES_MAP.get(id) || STYLES[0];
+    return STYLES.find(s => s.id === id) || STYLES[0];
 };

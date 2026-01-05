@@ -1,18 +1,20 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- */
+*/
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { compressImage, compressBase64Image } from '../services/imageUtils';
+import StyleSelector from './StyleSelector';
+import { STYLES } from '../constants/styles';
 
 interface ImageInputProps {
   onImageReady: (imageData: { data: string; mimeType: string }, styleId: string) => void;
-  selectedStyleId: string;
+  initialStyleId?: string;
 }
 
-const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, selectedStyleId }) => {
+const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, initialStyleId }) => {
   const [mode, setMode] = useState<'select' | 'camera'>('select');
+  const [selectedStyleId, setSelectedStyleId] = useState(initialStyleId || STYLES[0].id);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraInitializing, setIsCameraInitializing] = useState(false);
@@ -91,29 +93,21 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, selectedStyleId }
     processFile(file);
   };
 
-  const processFile = async (file: File | undefined) => {
+  const processFile = (file: File | undefined) => {
     if (file && file.type.startsWith('image/')) {
-      try {
-        // Compress image before sending to API (max 1920px, JPEG quality 0.85)
-        const compressed = await compressImage(file);
-        onImageReady({ data: compressed.data, mimeType: compressed.mimeType }, selectedStyleId);
-      } catch (error) {
-        console.error('Image compression failed:', error);
-        // Fallback to original uncompressed image
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          if (result) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
             const base64 = result.split(',')[1];
             onImageReady({ data: base64, mimeType: file.type }, selectedStyleId);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleCapture = async () => {
+  const handleCapture = () => {
     if (videoRef.current && stream) {
       if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) {
         setCameraError("Video stream not ready.");
@@ -128,19 +122,11 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, selectedStyleId }
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
+        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const base64 = dataUrl.split(',')[1];
-
-        try {
-          // Compress camera capture (max 1920px, JPEG quality 0.85)
-          const compressed = await compressBase64Image(base64, 'image/jpeg');
-          onImageReady({ data: compressed.data, mimeType: compressed.mimeType }, selectedStyleId);
-        } catch (error) {
-          console.error('Image compression failed:', error);
-          // Fallback to original uncompressed capture
-          onImageReady({ data: base64, mimeType: 'image/jpeg' }, selectedStyleId);
-        }
+        
+        onImageReady({ data: base64, mimeType: 'image/jpeg' }, selectedStyleId);
       }
     }
   };
@@ -165,97 +151,66 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, selectedStyleId }
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
     processFile(file);
-  }, [selectedStyleId, onImageReady]);
+  }, []);
 
   if (mode === 'select') {
       return (
-          <div
-             className={`w-full h-full flex flex-col items-center justify-center p-8 text-center relative overflow-hidden transition-colors duration-300 ${isDragOver ? 'bg-yellow-100' : 'bg-white'}`}
-             onDragOver={handleDragOver}
-             onDragLeave={handleDragLeave}
-             onDrop={handleDrop}
-          >
-             {/* Background Ambient */}
-             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(251,191,36,0.08),_transparent_70%)]"></div>
+          <div className="w-full max-w-5xl px-4 animate-fade-in flex flex-col items-center">
+             
+             <StyleSelector selectedStyleId={selectedStyleId} onSelect={setSelectedStyleId} />
 
-             <div className="z-10 flex flex-col items-center gap-10 w-full max-w-lg">
-                <div className="space-y-2">
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-gray-800 tracking-wider">
-                        PHOTO BOOTH
-                    </h2>
-                    <p className="text-gray-500 font-light tracking-widest text-sm uppercase">Select an Era &bull; Strike a Pose</p>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
+                
+                {/* Camera Card */}
+                <button
+                   onClick={() => setMode('camera')}
+                   className="group relative h-72 sm:h-80 rounded-2xl overflow-hidden bg-gray-900 border border-gray-800 hover:border-pink-500/50 transition-all duration-300 card-hover flex flex-col items-center justify-center text-center p-8"
+                >
+                   <div className="absolute inset-0 bg-gradient-to-br from-pink-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                   <div className="relative z-10 w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-pink-500/10 transition-all duration-300 border border-gray-700 group-hover:border-pink-500/30">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 group-hover:text-pink-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                   </div>
+                   <h3 className="relative z-10 text-2xl font-display font-bold text-white mb-2 group-hover:text-pink-400 transition-colors">Use Camera</h3>
+                   <p className="relative z-10 text-gray-400 text-sm max-w-[200px]">Capture a photo directly from your device.</p>
+                </button>
+                 
+                {/* Upload Card */}
+                <div
+                   onClick={() => fileInputRef.current?.click()}
+                   onDragOver={handleDragOver}
+                   onDragLeave={handleDragLeave}
+                   onDrop={handleDrop}
+                   className={`cursor-pointer group relative h-72 sm:h-80 rounded-2xl overflow-hidden bg-gray-900 border transition-all duration-300 card-hover flex flex-col items-center justify-center text-center p-8 ${isDragOver ? 'border-cyan-400 bg-gray-800/50 scale-[1.02]' : 'border-gray-800 hover:border-cyan-500/50'}`}
+                >
+                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                   <div className="relative z-10 w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-cyan-500/10 transition-all duration-300 border border-gray-700 group-hover:border-cyan-500/30">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 group-hover:text-cyan-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                   </div>
+                   <h3 className="relative z-10 text-2xl font-display font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">Upload Photo</h3>
+                   <p className="relative z-10 text-gray-400 text-sm max-w-[200px]">Drag & drop an image here or click to browse.</p>
                 </div>
-
-                <div className="flex flex-col w-full gap-4">
-                    <button
-                        onClick={() => setMode('camera')}
-                        className="group relative w-full h-20 rounded-xl bg-white border-2 border-gray-200 hover:border-yellow-400 overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]"
-                    >
-                       <div className="absolute inset-0 bg-gradient-to-r from-yellow-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                       <div className="relative flex items-center justify-between px-8 h-full">
-                           <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-yellow-400 text-gray-500 group-hover:text-white transition-colors">
-                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                   </svg>
-                               </div>
-                               <span className="font-display font-bold text-lg tracking-wide text-gray-700 group-hover:text-yellow-600 transition-colors">USE CAMERA</span>
-                           </div>
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400 group-hover:text-yellow-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                           </svg>
-                       </div>
-                    </button>
-
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="group relative w-full h-20 rounded-xl bg-white border-2 border-gray-200 hover:border-orange-400 overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)]"
-                    >
-                       <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                       <div className="relative flex items-center justify-between px-8 h-full">
-                           <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-orange-400 text-gray-500 group-hover:text-white transition-colors">
-                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                   </svg>
-                               </div>
-                               <span className="font-display font-bold text-lg tracking-wide text-gray-700 group-hover:text-orange-600 transition-colors">UPLOAD PHOTO</span>
-                           </div>
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400 group-hover:text-orange-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                           </svg>
-                       </div>
-                    </button>
-                </div>
-
-                <p className="text-gray-400 text-xs mt-4">Drag & Drop supported</p>
              </div>
-
-             <input
-               type="file"
-               ref={fileInputRef}
-               onChange={handleFileChange}
-               accept="image/*"
-               className="hidden"
-               aria-label="Upload photo"
-               title="Upload photo"
-             />
+             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
           </div>
       )
   }
 
   // Camera Mode
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center animate-fade-in p-4 relative bg-gray-50">
-      <div className="relative w-full h-full max-h-[80vh] aspect-[3/4] sm:aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-2xl border border-gray-300">
-        <video
+    <div className="w-full flex flex-col items-center animate-fade-in px-4">
+      <div className="relative w-full max-w-2xl aspect-[3/4] sm:aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-gray-800">
+        <video 
             ref={videoRef}
-            playsInline
-            muted
+            playsInline 
+            muted 
             className="w-full h-full object-cover transform scale-x-[-1]"
         ></video>
-
+        
         {/* Viewfinder Overlay */}
         <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-8 left-8 w-16 h-16 border-t-2 border-l-2 border-white/50 rounded-tl-lg"></div>
@@ -269,47 +224,47 @@ const ImageInput: React.FC<ImageInputProps> = ({ onImageReady, selectedStyleId }
         </div>
 
         {(isCameraInitializing || cameraError) && (
-            <div className="absolute inset-0 flex items-center justify-center p-8 text-center bg-gray-100 z-20">
+            <div className="absolute inset-0 flex items-center justify-center p-8 text-center bg-gray-900 z-20">
                 {isCameraInitializing ? (
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-yellow-600 font-display tracking-wider text-sm">INITIALIZING...</p>
+                        <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-cyan-400 font-display tracking-wider text-sm">INITIALIZING...</p>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <p className="text-red-500">{cameraError}</p>
-                        <button onClick={() => setMode('select')} className="mt-6 text-gray-600 underline underline-offset-4 hover:text-yellow-600">Go Back</button>
+                        <p className="text-red-400">{cameraError}</p>
+                        <button onClick={() => setMode('select')} className="mt-6 text-white underline underline-offset-4 hover:text-cyan-400">Go Back</button>
                     </div>
                 )}
             </div>
         )}
-
-        {/* Camera Controls Overlay */}
+        
         {stream && !cameraError && !isCameraInitializing && (
-             <div className="absolute bottom-0 left-0 right-0 p-6 flex items-center justify-between z-30 pointer-events-auto bg-gradient-to-t from-black/80 to-transparent">
-                 <button
-                    onClick={handleBack}
-                    className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
-                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                 </button>
-
+             <div className="absolute bottom-8 left-0 right-0 flex justify-center z-30 pointer-events-auto">
                  <button
                     onClick={handleCapture}
-                    className="w-16 h-16 rounded-full border-4 border-yellow-400 p-1 transition-transform duration-200 active:scale-95 hover:scale-105"
+                    className="w-20 h-20 rounded-full border-4 border-white/80 p-1 transition-transform duration-200 active:scale-95 hover:scale-105"
                     aria-label="Capture photo"
-                 >
-                    <div className="w-full h-full rounded-full bg-yellow-400 shadow-lg" />
-                 </button>
-
-                 <div className="w-10"></div> {/* Spacer for center alignment */}
+                >
+                    <div className="w-full h-full rounded-full bg-white shadow-lg" />
+                </button>
              </div>
         )}
+      </div>
+     
+      <div className="mt-8">
+         <button
+          onClick={handleBack}
+          className="text-gray-400 hover:text-white transition-colors text-sm font-medium tracking-wide flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-800"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          BACK TO OPTIONS
+        </button>
       </div>
     </div>
   );

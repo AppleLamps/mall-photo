@@ -30,21 +30,21 @@ const VideoPromptModal: React.FC<VideoPromptModalProps> = ({ onClose, onSubmit, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 animate-fade-in" onClick={onClose}>
-      <div className="bg-white border-2 border-yellow-400 p-8 w-full max-w-lg rounded-xl shadow-2xl relative" onClick={e => e.stopPropagation()}>
-        <h3 className="text-2xl text-amber-600 font-display font-bold mb-4 text-center">Bring Your Photo to Life!</h3>
-
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-40 animate-fade-in" onClick={onClose}>
+      <div className="bg-gray-900 border-2 border-pink-500 p-8 w-full max-w-lg box-glow-cyan relative" onClick={e => e.stopPropagation()}>
+        <h3 className="text-2xl text-glow-pink mb-4 text-center">Bring Your Photo to Life!</h3>
+        
         {isApiKeyNeeded && (
           <div className="text-center mb-6">
-            <p className="text-gray-700 mb-2">
+            <p className="text-cyan-300 mb-2">
               To generate a video, please provide your Google AI API key.
             </p>
-            <p className="text-sm text-gray-500">
-              <a
-                href="https://ai.google.dev/gemini-api/docs/api-key"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-orange-500 transition-colors"
+            <p className="text-sm text-cyan-500">
+              <a 
+                href="https://ai.google.dev/gemini-api/docs/api-key" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline hover:text-pink-400 transition-colors"
               >
                 Get your API key here.
               </a> It will be saved for this session.
@@ -52,8 +52,8 @@ const VideoPromptModal: React.FC<VideoPromptModalProps> = ({ onClose, onSubmit, 
           </div>
         )}
 
-        <p className="text-center text-gray-600 mb-6">Describe how you want this image to move. (e.g., "The person winks and the lasers flash")</p>
-
+        <p className="text-center text-cyan-300 mb-6">Describe how you want this image to move. (e.g., "The person winks and the lasers flash")</p>
+        
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
           {isApiKeyNeeded && (
             <input
@@ -62,7 +62,7 @@ const VideoPromptModal: React.FC<VideoPromptModalProps> = ({ onClose, onSubmit, 
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="Paste your API key here"
               required
-              className="w-full bg-gray-50 border-2 border-gray-300 text-gray-800 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+              className="w-full bg-gray-800 border-2 border-cyan-400 text-white p-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           )}
           <input
@@ -72,13 +72,13 @@ const VideoPromptModal: React.FC<VideoPromptModalProps> = ({ onClose, onSubmit, 
             placeholder="Make it move..."
             autoFocus={!isApiKeyNeeded}
             required
-            className="w-full bg-gray-50 border-2 border-gray-300 text-gray-800 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+            className="w-full bg-gray-800 border-2 border-cyan-400 text-white p-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
           <div className="flex justify-center space-x-4 pt-2">
-             <button type="button" onClick={onClose} className="bg-gray-200 text-gray-700 py-2 px-8 rounded-lg border-2 border-gray-300 hover:bg-gray-300 text-lg font-bold transition-colors">
+             <button type="button" onClick={onClose} className="bg-gray-600 text-white py-2 px-8 border-2 border-gray-400 hover:bg-gray-700 text-lg transition-colors">
               CANCEL
             </button>
-            <button type="submit" className="bg-yellow-400 text-gray-800 py-2 px-8 rounded-lg border-2 border-yellow-500 hover:bg-yellow-500 text-lg font-bold transition-colors">
+            <button type="submit" className="bg-pink-500 text-white py-2 px-8 border-2 border-pink-300 hover:bg-pink-600 text-lg transition-colors">
               GENERATE
             </button>
           </div>
