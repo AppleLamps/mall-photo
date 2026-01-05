@@ -23,15 +23,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onPromptSubmit, disabled }) => {
 
     return (
         <form onSubmit={handleSubmit} className="flex space-x-2">
-            <input 
+            <input
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe what to change..."
                 disabled={disabled}
-                className="flex-grow bg-gray-800 border-2 border-cyan-400 text-white p-3 focus:outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50 box-glow-cyan"
+                className="flex-grow bg-white border-2 border-yellow-400 text-gray-800 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50 placeholder-gray-400"
             />
-            <button type="submit" disabled={disabled} className="bg-pink-500 text-white py-3 px-6 border-2 border-pink-300 hover:bg-pink-600 active:bg-pink-700 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="submit" disabled={disabled} className="bg-orange-500 text-white py-3 px-6 rounded-lg border-2 border-orange-400 hover:bg-orange-600 active:bg-orange-700 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed">
                 REMIX
             </button>
         </form>
